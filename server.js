@@ -1,13 +1,3 @@
-const express = require("express");
-
-const { expressGraphQL } = require("express-graphql");
-
-const authors = [
-  { id: 1, name: "J. K. Rowling" },
-  { id: 2, name: "J. R. R. Tolkien" },
-  { id: 3, name: "Brent Weeks" },
-];
-
 const books = [
   { id: 1, name: "Harry Potter and the Chamber of Secrets", authorId: 1 },
   { id: 2, name: "Harry Potter and the Prisoner of Azkaban", authorId: 1 },
@@ -18,20 +8,56 @@ const books = [
   { id: 7, name: "The Way of Shadows", authorId: 3 },
   { id: 8, name: "Beyond the Shadows", authorId: 3 },
 ];
-
-const schema = new GraphQLSchema({
-  query: RootQueryType,
-  mutation: RootMutationType,
-});
-
+const express = require("express");
+const expressGraphQL = require("express-graphql").graphqlHTTP;
 const {
   GraphQLSchema,
   GraphQLObjectType,
-  GraphQLString,
+  GraphQLIntGraphQLString,
   GraphQLList,
   GraphQLInt,
   GraphQLNonNull,
+  GraphQLString,
 } = require("graphql");
+const app = express();
+
+const BookType = new GraphQLObjectType({
+  name: "book",
+  description: "Represets a book written by an author",
+  fields: () => ({
+    name: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    id: {
+      type: GraphQLNonNull(GraphQLInt),
+    },
+    authorId: {
+      type: GraphQLNonNull(GraphQLInt),
+    },
+  }),
+});
+
+const schema = new GraphQLSchema({
+  query: new GraphQLObjectType({
+    name: "helloworld",
+    fields: () => ({
+      message: {
+        type: GraphQLString,
+        resolve: () => "Hello world",
+      },
+      id: {
+        type: GraphQLString,
+        resolve: () => 1,
+      },
+
+      books: {
+        type: new GraphQLList(BookType),
+        description: "List of all books",
+        resolve: () => books,
+      },
+    }),
+  }),
+});
 
 app.use(
   "/graphql",
@@ -40,6 +66,4 @@ app.use(
     graphiql: true,
   })
 );
-
-app.listen(4000);
-console.log("Running a GraphQL API server at http://localhost:4000/graphql");
+app.listen(5000, () => console.log("Server Running"));
