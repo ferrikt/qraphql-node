@@ -8,6 +8,13 @@ const books = [
   { id: 7, name: "The Way of Shadows", authorId: 3 },
   { id: 8, name: "Beyond the Shadows", authorId: 3 },
 ];
+
+const authors = [
+  { id: 1, name: "J. K. Rowling" },
+  { id: 2, name: "J. R. R. Tolkien" },
+  { id: 3, name: "Brent Weeks" },
+];
+
 const express = require("express");
 const expressGraphQL = require("express-graphql").graphqlHTTP;
 const {
@@ -19,7 +26,26 @@ const {
   GraphQLNonNull,
   GraphQLString,
 } = require("graphql");
+const { argsToArgsConfig } = require("graphql/type/definition");
 const app = express();
+
+const AuthorType = new GraphQLObjectType({
+  name: "author",
+  description: "Represets a singleauthor",
+  fields: () => ({
+    name: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    id: {
+      type: GraphQLNonNull(GraphQLInt),
+    },
+    books: {
+      type: new GraphQLList(BookType),
+      description: "List of all books",
+      resolve: (parent, args) => books.filter((x) => x.authorId === parent.id),
+    },
+  }),
+});
 
 const BookType = new GraphQLObjectType({
   name: "book",
@@ -34,26 +60,47 @@ const BookType = new GraphQLObjectType({
     authorId: {
       type: GraphQLNonNull(GraphQLInt),
     },
+
+    author: {
+      type: AuthorType,
+      description: "author of the book",
+      resolve: (parent, args) =>
+        authors.find((author) => author.id === parent.id),
+    },
   }),
 });
 
 const schema = new GraphQLSchema({
   query: new GraphQLObjectType({
-    name: "helloworld",
+    name: "rootquery",
     fields: () => ({
-      message: {
-        type: GraphQLString,
-        resolve: () => "Hello world",
+      book: {
+        type: BookType,
+        description: "A single book",
+        args: {
+          id: { type: GraphQLInt },
+        },
+        resolve: (parent, args) => books.find((x) => x.id === args.id),
       },
-      id: {
-        type: GraphQLString,
-        resolve: () => 1,
-      },
-
       books: {
         type: new GraphQLList(BookType),
         description: "List of all books",
         resolve: () => books,
+      },
+      authors: {
+        type: new GraphQLList(AuthorType),
+        description: "List of all authors",
+        resolve: () => authors,
+      },
+      author: {
+        type: AuthorType,
+        description: "author and their books",
+        args: {
+          id: { type: GraphQLInt },
+        },
+        resolve: (parent, args) => {
+          return authors.find((x) => x.id === args.id);
+        },
       },
     }),
   }),
